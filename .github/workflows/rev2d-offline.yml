@@ -1,0 +1,65 @@
+name: Build Rev2D offline Linux x64
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/rev2d-offline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install, verify and build
+        run: |
+          set -euo pipefail
+          npm ci
+          npm run typecheck
+          npm test -- --reporter=dot
+          npm run build
+      - name: Prepare portable offline runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm prune --omit=dev
+          mkdir -p offline/rev2d offline/bin
+          cp -a dist bin docs examples LICENSE README.md package.json node_modules offline/rev2d/
+          if [ -d editor/dist ]; then
+            mkdir -p offline/rev2d/editor
+            cp -a editor/dist offline/rev2d/editor/
+          fi
+          cp "$(command -v node)" offline/bin/node
+          cat > offline/rev2d.sh <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          BASE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+          export REV2D_RUNTIME=dist
+          exec "$BASE/bin/node" "$BASE/rev2d/bin/rev2d.js" "$@"
+          SH
+          chmod +x offline/rev2d.sh offline/bin/node
+          offline/rev2d.sh help >/dev/null
+          offline/rev2d.sh new /tmp/offline-test.r2d.json
+          offline/rev2d.sh validate /tmp/offline-test.r2d.json
+          offline/rev2d.sh render /tmp/offline-test.r2d.json -o /tmp/offline-test.png
+          file /tmp/offline-test.png
+          echo "Git revision: $GITHUB_SHA" > offline/BUILD_INFO.txt
+          (cd offline && sha256sum bin/node rev2d/bin/rev2d.js > SHA256SUMS)
+      - name: Create ZIP and verify integrity
+        run: |
+          cd offline
+          zip -qr "$RUNNER_TEMP/rev2d-offline-linux-x64.zip" .
+          unzip -t "$RUNNER_TEMP/rev2d-offline-linux-x64.zip" | tail -1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rev2d-offline-linux-x64
+          path: ${{ runner.temp }}/rev2d-offline-linux-x64.zip
+          retention-days: 14
