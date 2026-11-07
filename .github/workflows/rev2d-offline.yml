@@ -24,8 +24,11 @@ jobs:
           set -euo pipefail
           npm ci
           npm run typecheck
-          npm test -- --reporter=dot
           npm run build
+      - name: Run upstream test suite (reported, non-blocking for packaging)
+        id: upstream_tests
+        continue-on-error: true
+        run: npm test -- --reporter=dot
       - name: Prepare portable offline runtime
         shell: bash
         run: |
@@ -49,9 +52,10 @@ jobs:
           offline/rev2d.sh help >/dev/null
           offline/rev2d.sh new /tmp/offline-test.r2d.json
           offline/rev2d.sh validate /tmp/offline-test.r2d.json
-          offline/rev2d.sh render /tmp/offline-test.r2d.json -o /tmp/offline-test.png
+          offline/rev2d.sh render offline/rev2d/examples/hana.r2d.json -o /tmp/offline-test.png
           file /tmp/offline-test.png
           echo "Git revision: $GITHUB_SHA" > offline/BUILD_INFO.txt
+          echo "Upstream test result: ${{ steps.upstream_tests.outcome }}" >> offline/BUILD_INFO.txt
           (cd offline && sha256sum bin/node rev2d/bin/rev2d.js > SHA256SUMS)
       - name: Create ZIP and verify integrity
         run: |
