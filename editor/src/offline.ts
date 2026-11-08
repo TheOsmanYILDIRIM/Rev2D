@@ -45,10 +45,33 @@ function document(){
   return v?.ok?v.value as {textures?:Array<{id:string;path:string}>}:null;
 }
 function newDoc(name:string,width:number,height:number,empty:boolean):Record<string,any>{
-  if(empty) return {format:'rev2d',version:1,meta:{name,width,height},parameters:[],bones:[],parts:[],animations:[]};
-  const doc=JSON.parse(minimal);
-  doc.meta={...doc.meta,name,width,height};
-  return doc;
+  if(empty)return {format:'rev2d',version:1,meta:{name,width,height}};
+  const cx=Math.round(width/2),cy=Math.round(height/2),r=Math.round(Math.min(width,height)*0.25);
+  return {
+    format:'rev2d',version:1,meta:{name,width,height,background:'#20242c'},
+    parameters:[{id:'Lean',min:-1,max:1,default:0},{id:'Squash',min:0,max:1,default:0}],
+    bones:[{id:'root',x:cx,y:cy+r,length:0}],
+    warps:[{id:'bodyWarp',parent:'root',rect:[cx-r-8,cy-r-8,2*r+16,2*r+16],cols:2,rows:2}],
+    parts:[
+      {id:'body',parent:'bodyWarp',shape:{type:'ellipse',cx,cy,rx:r,ry:r,detail:12},
+        fill:{type:'radial',center:[cx-r*.3,cy-r*.3],radius:r*1.4,stops:[[0,'#9be7ff'],[1,'#2f7fd8']]},
+        stroke:{color:'#10325e',width:3}},
+      {id:'eye',parent:'bodyWarp',shape:{type:'ellipse',cx,cy:cy-Math.round(r*.15),rx:Math.round(r*.12),ry:Math.round(r*.2)},
+        fill:'#10325e',z:1},
+    ],
+    bindings:[
+      {target:'warp:bodyWarp.offsets',params:['Lean'],keys:[
+        {at:[-1],value:{'0':[-r*.4,0],'1':[-r*.4,0],'2':[-r*.4,0],'3':[-r*.2,0],'4':[-r*.2,0],'5':[-r*.2,0]}},
+        {at:[0],value:{}},
+        {at:[1],value:{'0':[r*.4,0],'1':[r*.4,0],'2':[r*.4,0],'3':[r*.2,0],'4':[r*.2,0],'5':[r*.2,0]}}],
+      },
+      {target:'bone:root.scaleY',params:['Squash'],keys:[{at:[0],value:1},{at:[1],value:.8}]},
+      {target:'bone:root.scaleX',params:['Squash'],keys:[{at:[0],value:1},{at:[1],value:1.15}]},
+    ],
+    animations:[{id:'idle',duration:2,loop:true,tracks:[
+      {target:'param:Lean',keys:[{t:0,v:-.5,ease:'inOutSine'},{t:1,v:.5,ease:'inOutSine'},{t:2,v:-.5}]},
+      {target:'param:Squash',keys:[{t:0,v:0,ease:'inOutSine'},{t:.5,v:.4,ease:'inOutSine'},{t:1,v:0,ease:'inOutSine'},{t:1.5,v:.4,ease:'inOutSine'},{t:2,v:0}]}]}],
+  };
 }
 async function endpoint(url:URL,init:RequestInit):Promise<Response>{
   const method=(init.method||'GET').toUpperCase(),p=url.pathname;
@@ -136,7 +159,7 @@ async function endpoint(url:URL,init:RequestInit):Promise<Response>{
         else if(f.base64){
           const raw=atob(f.base64.replace(/^data:[^,]*,/,''));
           const bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));
-          await store({path:target,image:new Blob([bytes],{type:'image/png'}),mtimeMs:Date.now()});
+          await store({path:target,image:new Blob([bytes.buffer.slice(bytes.byteOffset,bytes.byteOffset+bytes.byteLength) as ArrayBuffer],{type:'image/png'}),mtimeMs:Date.now()});
         }
       }
       return response(await choose(dest));
