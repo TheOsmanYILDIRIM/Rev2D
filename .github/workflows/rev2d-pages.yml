@@ -26,6 +26,8 @@ jobs:
         run: npm run editor:build
         env:
           VITE_REV2D_STATIC: 'true'
+      - name: Smoke-test mobile browser and local project persistence
+        run: node scripts/check-mobile-pages.mjs
       - run: touch dist/editor/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
