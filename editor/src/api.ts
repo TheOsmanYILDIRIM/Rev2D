@@ -434,6 +434,10 @@ const RECONNECT_DELAYS_MS = [1000, 2000, 5000, 10000];
  * restarts); such a stream is re-opened here with a back-off, so the bridge always comes back.
  */
 export function connectEvents(h: EventHandlers): () => void {
+  if (import.meta.env.VITE_REV2D_STATIC === 'true') {
+    queueMicrotask(() => h.onOpen(null));
+    return () => {};
+  }
   let es: EventSource | null = null;
   let timer: ReturnType<typeof setTimeout> | null = null;
   let failures = 0;
