@@ -2,7 +2,7 @@
  * Browser-level smoke test of the exact static Pages bundle.
  * Exercises the real Session, WebGL2 viewport and IndexedDB persistence on a mobile viewport.
  */
-import { existsSync } from 'node:fs';
+import { existsSync, mkdirSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from 'playwright-core';
@@ -25,14 +25,22 @@ try{
   const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,deviceScaleFactor:1});
   const page=await context.newPage();
   const errors=[];
+  const shots=process.env.REV2D_CAPTURE_SCREENSHOTS==='1';
+  if(shots)mkdirSync('rev2d-screen-references',{recursive:true});
+  const shot=async(name)=>{if(shots)await page.screenshot({path:'rev2d-screen-references/'+name+'.png',fullPage:true,animations:'disabled'});};
   page.on('pageerror',e=>errors.push(e.message));
   const res=await page.goto(url,{waitUntil:'domcontentloaded',timeout:30000});
   if(res?.status()!==200)throw Error('Unexpected index status: '+res?.status());
   await page.waitForFunction(()=>window.__rev2d?.stats()?.status==='empty',{timeout:30000});
+  await shot('01-start-mobile');
+  await page.getByTestId('start-new').click();
+  await shot('02-new-project-dialog-mobile');
+  await page.keyboard.press('Escape');
   const result=await page.evaluate(()=>window.__rev2d.session.createModel({file:'smoke.r2d.json',template:'minimal'}));
   if(!result.ok)throw Error('New model creation failed: '+JSON.stringify(result));
   await page.waitForFunction(()=>window.__rev2d?.stats()?.ready,{timeout:30000});
   const initial=await page.evaluate(()=>window.__rev2d.stats());
+  await shot('03-rig-workspace-mobile');
   const put=await page.evaluate(async()=>window.__rev2d.session.save(true));
   if(!put)throw Error('Model save failed');
   await page.reload({waitUntil:'domcontentloaded'});
@@ -40,7 +48,8 @@ try{
   const restored=await page.evaluate(()=>window.__rev2d.stats());
   if(!restored.file.includes('smoke.r2d.json')||restored.errors)throw Error('Model restore failed: '+JSON.stringify(restored));
   if(errors.length)throw Error('Uncaught browser JS errors: '+errors.join(' | '));
-  console.log(JSON.stringify({ok:true,initial,restored,mobileViewport:[390,844],webgl:true,indexeddb:true},null,2));
+  await shot('04-restored-project-mobile');
+  console.log(JSON.stringify({ok:true,initial,restored,mobileViewport:[390,844],webgl:true,indexeddb:true,screenshots:shots},null,2));
 }finally{
   await browser?.close();
   server.kill('SIGTERM');
