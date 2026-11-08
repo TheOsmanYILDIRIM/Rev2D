@@ -28,6 +28,15 @@ jobs:
           VITE_REV2D_STATIC: 'true'
       - name: Smoke-test mobile browser and local project persistence
         run: node scripts/check-mobile-pages.mjs
+        env:
+          REV2D_CAPTURE_SCREENSHOTS: '1'
+      - name: Upload Rev2D original UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rev2d-original-mobile-screens
+          path: rev2d-screen-references/*.png
+          if-no-files-found: warn
       - run: touch dist/editor/.nojekyll
       - uses: actions/upload-pages-artifact@v3
         with:
