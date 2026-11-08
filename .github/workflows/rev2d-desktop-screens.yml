@@ -1,5 +1,10 @@
 name: Rev2D Original Desktop Screenshots
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/rev2d-desktop-screens.yml'
+      - 'scripts/capture-desktop-screens.mjs'
   workflow_dispatch:
 permissions:
   contents: read
