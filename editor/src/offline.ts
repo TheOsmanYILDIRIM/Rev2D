@@ -28,7 +28,7 @@ async function setting(key:string,value:unknown){const tx=db.transaction('settin
 async function store(f:Entry){const tx=db.transaction('files','readwrite');await done(tx,tx.objectStore('files').put(f));entries.set(f.path,f);}
 async function save(path:string,text:string){const e={path,text,mtimeMs:Date.now()};await store(e);return e;}
 function active(){
-  const e=selected&&entries.get(selected);
+  const e=selected ? entries.get(selected) : undefined;
   if(!e?.text) throw Error('no model is open');
   return {file:e.path,text:e.text,mtimeMs:e.mtimeMs,notes:[]};
 }
@@ -38,7 +38,7 @@ async function choose(path:string){
   await setting('current',selected);await setting('recent',recent);
   return active();
 }
-function document(){
+function modelDoc(){
   if(!selected) return null;
   const txt=entries.get(selected)?.text;
   const v=txt?parseJsonc(txt):null;
@@ -136,7 +136,7 @@ async function endpoint(url:URL,init:RequestInit):Promise<Response>{
       const input=String(b.file||''),dest=absolute(/\.jsonc?$/i.test(input)?input:input+'.r2d.json');
       if(entries.has(dest)&&dest!==selected&&!b.overwrite)return fail(409,'file already exists: '+dest);
       const old=selected,tx=b.doc?formatModelJson(b.doc):typeof b.text==='string'?b.text:active().text;
-      const tex=document()?.textures||[];
+      const tex=modelDoc()?.textures||[];
       await save(dest,tx);
       for(const t of tex){
         if(typeof t.path!=='string'||t.path.startsWith('data:'))continue;
@@ -167,7 +167,7 @@ async function endpoint(url:URL,init:RequestInit):Promise<Response>{
     if(p==='/api/close'&&method==='POST'){selected=null;await setting('current',null);return response({root,current:null,recent});}
     if(p.startsWith('/api/texture/')){
       const id=decodeURIComponent(p.slice('/api/texture/'.length));
-      const tex=document()?.textures?.find(t=>t.id===id);
+      const tex=modelDoc()?.textures?.find(t=>t.id===id);
       if(!tex)return fail(404,'texture not found: '+id);
       if(tex.path.startsWith('data:'))return originalFetch(tex.path);
       const img=entries.get(absolute((folder(selected!)?folder(selected!)+'/':'')+tex.path))?.image;
