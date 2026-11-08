@@ -4,7 +4,7 @@
 .ed-mobile-sheet{display:flex;flex-direction:column;overflow:hidden;min-height:0;border-radius:24px;color:var(--r2-label);transition:height 160ms ease-out}
 .ed-mobile-workspace[data-extent='peek'] .ed-mobile-sheet{height:58px}
 .ed-mobile-workspace[data-extent='half'] .ed-mobile-sheet{height:clamp(220px,40dvh,370px)}
-.ed-mobile-workspace[data-extent='full'] .ed-mobile-sheet{height:min(72dvh,690px)}
+.ed-mobile-workspace[data-extent='full'] .ed-mobile-sheet{height:min(56dvh,480px)}
 .ed-mobile-workspace[data-page='timeline'][data-extent='peek'] .ed-mobile-sheet{height:116px}
 .ed-mobile-sheet-head{display:flex;flex:none;align-items:center;gap:9px;min-height:54px;padding:3px 13px 5px}
 .ed-mobile-drag{flex:none;width:42px;height:40px;display:grid;place-items:center;padding:0;border:0;background:transparent;touch-action:none;cursor:ns-resize}

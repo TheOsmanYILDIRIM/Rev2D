@@ -500,3 +500,41 @@ body {
 .ed-shell[data-phone] .ed-view-controls{bottom:calc(var(--ed-mobile-height,0px) + 12px)}
 .ed-shell[data-phone] .ed-hud{bottom:calc(var(--ed-mobile-height,0px) + 10px)}
 .ed-shell[data-phone] .ed-hud-status{padding-inline-end:0}
+
+/* Phone header: two tidy rows instead of clipping the File and Save actions.
+   No change to the desktop header or Rev2D light-theme palette. */
+.ed-shell[data-phone] .ed-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-content: space-between;
+  height: 96px;
+  width: 100%;
+  min-width: 0;
+  padding: 3px 4px;
+  gap: 3px 5px;
+  overflow: hidden;
+}
+.ed-shell[data-phone] .ed-toolbar > .r2-toolbar-spacer { display: none; }
+.ed-shell[data-phone] .ed-toolbar > .r2-toolbar-group:first-child {
+  order: 0;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+.ed-shell[data-phone] .ed-toolbar > .ed-toolbar-save {
+  order: 1;
+  flex: none;
+  margin-left: auto;
+}
+.ed-shell[data-phone] .ed-toolbar::before {
+  content: '';
+  order: 2;
+  flex: 0 0 100%;
+  height: 0;
+}
+.ed-shell[data-phone] .ed-toolbar > .r2-toolbar-group:not(:first-child) { order: 3; }
+.ed-shell[data-phone] .ed-toolbar [data-testid='toggle-outliner'],
+.ed-shell[data-phone] .ed-toolbar [data-testid='toggle-inspector'],
+.ed-shell[data-phone] .ed-toolbar [data-testid='toggle-ai'][aria-disabled='true'] { display: none; }
+.ed-shell[data-phone] .ed-toolbar .r2-toolbar-group { min-width: 0; }
+.ed-shell[data-phone] .ed-toolbar .r2-icon-button { flex: none; }

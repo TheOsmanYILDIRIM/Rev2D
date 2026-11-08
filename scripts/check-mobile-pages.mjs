@@ -40,6 +40,10 @@ try{
   if(!result.ok)throw Error('New model creation failed: '+JSON.stringify(result));
   await page.waitForFunction(()=>window.__rev2d?.stats()?.ready,{timeout:30000});
   const initial=await page.evaluate(()=>window.__rev2d.stats());
+  // All primary actions must stay on the phone, especially Save (previously clipped).
+  const saveBox=await page.getByTestId('save').boundingBox();
+  if(!saveBox || saveBox.x<0 || saveBox.x+saveBox.width>391 || saveBox.y+saveBox.height>115)
+    throw Error('Phone toolbar clipped the Save action: '+JSON.stringify(saveBox));
   await shot('03-rig-workspace-mobile');
   await page.getByTestId('mobile-workspace').waitFor();
   await page.getByTestId('mobile-tab-inspect').click();
@@ -54,6 +58,8 @@ try{
   await page.getByRole('button',{name:'Expand panel'}).click();
   await page.getByRole('button',{name:'Expand panel'}).click();
   await page.waitForFunction(()=>document.querySelector('[data-testid="mobile-workspace"]')?.getAttribute('data-extent')==='full');
+  const expanded=await page.getByTestId('mobile-workspace').boundingBox();
+  if(!expanded || expanded.y<240)throw Error('Expanded timeline hides too much of the canvas: '+JSON.stringify(expanded));
   await shot('08-timeline-full-mobile');
   await page.getByTestId('mobile-tab-panels').click();
   await page.getByTestId('outliner').waitFor();

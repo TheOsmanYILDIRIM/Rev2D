@@ -79,8 +79,15 @@ export function Shell() {
     [Leading, Trailing, Bottom, open, bottomBar],
   );
   const mobileSetup = useMemo(() => phone ? { ...setup, leading: false, trailing: false, bottom: false } : setup, [phone, setup]);
-  const specs = useMemo(() => paneSpecs(mobileSetup), [mobileSetup]);
-  const dock = useMemo(() => dockStateOf(sizes, mobileSetup), [sizes, mobileSetup]);
+  const specs = useMemo(() => {
+    const panes = paneSpecs(mobileSetup);
+    return phone ? panes.map(p => p.id === PANE_IDS.toolbar ? { ...p, size: 96, min: 96, max: 96 } : p) : panes;
+  }, [mobileSetup, phone]);
+  const dock = useMemo(() => {
+    const state = dockStateOf(sizes, mobileSetup);
+    if (phone) state.sizes[PANE_IDS.toolbar] = 96;
+    return state;
+  }, [sizes, mobileSetup, phone]);
   const safe = useMemo(() => layoutDock(specs, dock, size, { floating: true, gap: PANE_GAP }).safe, [specs, dock, size]);
 
   // The session frames the model in what the chrome leaves free (and above the status line).
