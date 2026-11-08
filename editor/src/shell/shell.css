@@ -495,3 +495,8 @@ body {
     background: CanvasText;
   }
 }
+
+/* Keep existing canvas controls clear of the phone sheet; no theme change. */
+.ed-shell[data-phone] .ed-view-controls{bottom:calc(var(--ed-mobile-height,0px) + 12px)}
+.ed-shell[data-phone] .ed-hud{bottom:calc(var(--ed-mobile-height,0px) + 10px)}
+.ed-shell[data-phone] .ed-hud-status{padding-inline-end:0}

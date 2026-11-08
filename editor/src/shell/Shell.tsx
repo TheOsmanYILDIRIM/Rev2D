@@ -16,7 +16,7 @@
  * COMPACT_WIDTH the sidebars start closed and open one at a time), and it tells the session which
  * part of the canvas the chrome covers, so the model is framed in the free area.
  */
-import { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import { useEffect, useLayoutEffect, useMemo, useState, type CSSProperties } from 'react';
 import { SplitView, layoutDock, type DockState, type SplitPane } from '../design/index.js';
 import { useElementSize } from '../design/util.js';
 import { FileDialogs } from '../files/FileDialogs.js';
@@ -30,6 +30,7 @@ import { COMPACT_WIDTH, PANE_GAP, PANE_IDS, dockStateOf, loadLayout, paneSpecs, 
 import { Banners, HelpSheet, LoadFailure, Toasts } from './Overlays.js';
 import { labelText, resolveMode, useModes, usePanels } from './registry.js';
 import { StatusLine } from './StatusLine.js';
+import { MobileWorkspace } from './MobileWorkspace.js';
 import './shell.css';
 
 /** Height the status line takes at the bottom of the free area (the model is framed above it). */
@@ -49,10 +50,12 @@ export function Shell() {
   const open = useApp((s) => ({ leading: panelOpen(s, 'outliner'), trailing: panelOpen(s, 'inspector'), bottom: panelOpen(s, 'dock') }), shallowEqual);
   const storedPanels = useApp((s) => s.panels);
   const [sizes, setSizes] = useState<PaneSizes>(() => loadLayout().sizes);
+  const [mobileHeight, setMobileHeight] = useState(0);
   useEffect(() => saveLayout({ sizes, panels: storedPanels }), [sizes, storedPanels]);
 
   const [measure, size] = useElementSize<HTMLDivElement>();
   const compact = (size?.width ?? window.innerWidth) < COMPACT_WIDTH;
+  const phone = (size?.width ?? window.innerWidth) <= 760 && mode !== null;
   useEffect(() => session.setCompact(compact), [session, compact]);
 
   // The slots of the window.
@@ -75,19 +78,20 @@ export function Shell() {
     }),
     [Leading, Trailing, Bottom, open, bottomBar],
   );
-  const specs = useMemo(() => paneSpecs(setup), [setup]);
-  const dock = useMemo(() => dockStateOf(sizes, setup), [sizes, setup]);
+  const mobileSetup = useMemo(() => phone ? { ...setup, leading: false, trailing: false, bottom: false } : setup, [phone, setup]);
+  const specs = useMemo(() => paneSpecs(mobileSetup), [mobileSetup]);
+  const dock = useMemo(() => dockStateOf(sizes, mobileSetup), [sizes, mobileSetup]);
   const safe = useMemo(() => layoutDock(specs, dock, size, { floating: true, gap: PANE_GAP }).safe, [specs, dock, size]);
 
   // The session frames the model in what the chrome leaves free (and above the status line).
   useLayoutEffect(() => {
-    session.setInsets({ top: safe.top, right: safe.right, bottom: safe.bottom + (empty ? 0 : HUD_ROW), left: safe.left });
+    session.setInsets({ top: safe.top, right: safe.right, bottom: phone ? mobileHeight + 8 : safe.bottom + (empty ? 0 : HUD_ROW), left: safe.left });
     // Surfaces in layers outside the split view (toasts) centre themselves in the free area too.
     const root = document.documentElement.style;
     root.setProperty('--ed-free-left', `${safe.left}px`);
     root.setProperty('--ed-free-right', `${safe.right}px`);
-    root.setProperty('--ed-free-bottom', `${safe.bottom}px`);
-  }, [session, safe, empty]);
+    root.setProperty('--ed-free-bottom', `${phone ? mobileHeight + 8 : safe.bottom}px`);
+  }, [session, safe, empty, phone, mobileHeight]);
 
   const onDock = (next: DockState): void => {
     setSizes((prev) => sizesFromDock(prev, next, setup));
@@ -112,7 +116,7 @@ export function Shell() {
   });
 
   return (
-    <div ref={measure} className="ed-shell" data-status={status} data-mode={mode?.id} data-compact={compact ? '' : undefined}>
+    <div ref={measure} className="ed-shell" data-status={status} data-mode={mode?.id} data-compact={compact ? '' : undefined} data-phone={phone ? '' : undefined} style={phone ? { '--ed-mobile-height': `${mobileHeight}px` } as CSSProperties : undefined}>
       <SplitView floating gap={PANE_GAP} panes={panes} state={dock} onStateChange={onDock}>
         {empty ? <StartScreen /> : Canvas ? <Canvas /> : <div className="ed-canvas-empty" />}
         {!empty && (
@@ -125,6 +129,7 @@ export function Shell() {
         )}
         <Toasts />
       </SplitView>
+      {phone && <MobileWorkspace leading={Leading} trailing={Trailing} bottom={Bottom} modeId={mode?.id ?? ''} onHeightChange={setMobileHeight} />}
       <HelpSheet />
       <LoadFailure />
       <FileDialogs />

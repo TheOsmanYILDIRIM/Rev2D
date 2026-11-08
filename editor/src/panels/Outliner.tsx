@@ -131,7 +131,7 @@ export function Outliner() {
             aria-label={t('outliner.label')}
             value={tab}
             onChange={(id) => session.store.set({ outlinerTab: id })}
-            options={TABS.map((x) => ({ value: x.id, icon: x.icon, ariaLabel: t(x.title) }))}
+            options={TABS.map((x) => ({ value: x.id, icon: x.icon, label: <span className="ed-outline-tab-label">{t(x.title)}</span>, ariaLabel: t(x.title) }))}
             data-testid="outliner-tabs"
           />
           <SearchField size="sm" value={search} onChange={(text) => session.store.set({ search: text })} placeholder={t('outliner.search')} aria-label={t('outliner.search')} data-testid="outliner-search" />

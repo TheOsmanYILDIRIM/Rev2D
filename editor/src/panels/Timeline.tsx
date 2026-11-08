@@ -51,7 +51,7 @@ function optionsText(o: LayerOptions, t: Translate): string {
   return parts.join(' · ');
 }
 
-export function Timeline({ collapsed }: { collapsed: boolean }) {
+export function Timeline({ collapsed, onToggleMobile }: { collapsed: boolean; onToggleMobile?: () => void }) {
   const t = useT();
   const model = useApp((s) => s.model);
   const animationId = useApp((s) => s.animation);
@@ -60,7 +60,7 @@ export function Timeline({ collapsed }: { collapsed: boolean }) {
   return (
     <Drawer padded={false} aria-label={t('shell.pane.bottom')} className="ed-tl-panel" data-testid="timeline" data-collapsed={collapsed ? '' : undefined}>
       <div className="ed-tl">
-        <Transport anim={anim} start={start} collapsed={collapsed} />
+        <Transport anim={anim} start={start} collapsed={collapsed} onToggleMobile={onToggleMobile} />
         {!collapsed && (
           <div className="ed-tl-body">
             <div className="ed-tl-tracks">{anim ? <Tracks anim={anim} start={start} /> : <NoAnimation />}</div>
@@ -78,7 +78,7 @@ function NoAnimation() {
   return <p className="ed-tl-empty">{count ? t('timeline.setupPose.text') : t('timeline.noAnimations')}</p>;
 }
 
-function Transport({ anim, start, collapsed }: { anim: Animation | null; start: number; collapsed: boolean }) {
+function Transport({ anim, start, collapsed, onToggleMobile }: { anim: Animation | null; start: number; collapsed: boolean; onToggleMobile?: () => void }) {
   const session = useSession();
   const t = useT();
   const model = useApp((s) => s.model);
@@ -146,7 +146,7 @@ function Transport({ anim, start, collapsed }: { anim: Animation | null; start: 
         label={collapsed ? t('timeline.show') : t('timeline.hide')}
         aria-expanded={!collapsed}
         tooltip="top"
-        onClick={() => session.togglePanel('dock')}
+        onClick={() => onToggleMobile ? onToggleMobile() : session.togglePanel('dock')}
         data-testid="toggle-dock"
       />
     </div>
