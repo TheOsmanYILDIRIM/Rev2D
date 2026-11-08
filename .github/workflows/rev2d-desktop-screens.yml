@@ -1,0 +1,28 @@
+name: Rev2D Original Desktop Screenshots
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Build original desktop editor
+        run: npm run editor:build
+        env:
+          VITE_REV2D_STATIC: 'true'
+      - name: Capture desktop UI at 1600x900
+        run: node scripts/capture-desktop-screens.mjs
+      - name: Upload desktop PNG references
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rev2d-original-desktop-png
+          path: rev2d-desktop-screens/*.png
+          if-no-files-found: error
