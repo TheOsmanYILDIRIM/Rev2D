@@ -175,6 +175,8 @@ export function Viewport() {
 
   const drag = useRef<{ id: number; mode: 'pan' | 'click'; x: number; y: number; moved: boolean } | null>(null);
   const lastClick = useRef<{ x: number; y: number } | null>(null);
+  /** Touch pointers are tracked independently so pinch-to-zoom never selects a part. */
+  const touches = useRef(new Map<number, { x: number; y: number; startX: number; startY: number }>());
 
   const localPoint = (e: { clientX: number; clientY: number }): [number, number] => {
     const r = host.current!.getBoundingClientRect();
@@ -182,8 +184,16 @@ export function Viewport() {
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>): void => {
-    if (drag.current) return;
     const [x, y] = localPoint(e);
+    if (e.pointerType === 'touch') {
+      e.currentTarget.setPointerCapture(e.pointerId);
+      touches.current.set(e.pointerId, { x, y, startX: x, startY: y });
+      if (touches.current.size === 1) drag.current = { id: e.pointerId, mode: 'click', x, y, moved: false };
+      else { drag.current = null; setPanning(true); }
+      e.preventDefault();
+      return;
+    }
+    if (drag.current) return;
     const pan = e.button === 1 || e.button === 2 || (e.button === 0 && keyState.space);
     if (!pan && e.button !== 0) return;
     e.currentTarget.setPointerCapture(e.pointerId);
@@ -198,6 +208,31 @@ export function Viewport() {
   const onPointerMove = (e: React.PointerEvent<HTMLDivElement>): void => {
     const [x, y] = localPoint(e);
     const s = session.get();
+    if (e.pointerType === 'touch') {
+      const previous = touches.current.get(e.pointerId);
+      if (!previous) return;
+      const before = [...touches.current.values()];
+      touches.current.set(e.pointerId, { ...previous, x, y });
+      const after = [...touches.current.values()];
+      if (after.length >= 2) {
+        const a0 = before[0]!, b0 = before[1]!, a1 = after[0]!, b1 = after[1]!;
+        const oldCx = (a0.x + b0.x) / 2, oldCy = (a0.y + b0.y) / 2;
+        const newCx = (a1.x + b1.x) / 2, newCy = (a1.y + b1.y) / 2;
+        const oldDist = Math.hypot(a0.x - b0.x, a0.y - b0.y);
+        const newDist = Math.hypot(a1.x - b1.x, a1.y - b1.y);
+        const next = zoomAt(s.camera, s.viewport, oldCx, oldCy, oldDist > 1 ? newDist / oldDist : 1);
+        session.setCamera(panBy(next, newCx - oldCx, newCy - oldCy));
+        return;
+      }
+      const d = drag.current;
+      if (!d || d.id !== e.pointerId) return;
+      if (Math.hypot(x - previous.startX, y - previous.startY) > CLICK_SLOP) d.moved = true;
+      if (d.moved) {
+        session.setCamera(panBy(s.camera, x - previous.x, y - previous.y));
+        setPanning(true);
+      }
+      return;
+    }
     const d = drag.current;
     if (d && d.id === e.pointerId) {
       if (Math.hypot(x - d.x, y - d.y) > CLICK_SLOP) d.moved = true;
@@ -213,6 +248,17 @@ export function Viewport() {
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLDivElement>): void => {
+    if (e.pointerType === 'touch') {
+      touches.current.delete(e.pointerId);
+      if (touches.current.size) {
+        // After a pinch, the remaining finger begins a pan instead of a spurious tap.
+        const [id, p] = touches.current.entries().next().value!;
+        drag.current = { id, mode: 'pan', x: p.x, y: p.y, moved: true };
+        setPanning(true);
+        return;
+      }
+      setPanning(false);
+    }
     const d = drag.current;
     if (!d || d.id !== e.pointerId) return;
     drag.current = null;
