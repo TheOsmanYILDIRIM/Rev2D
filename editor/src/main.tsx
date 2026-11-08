@@ -76,6 +76,11 @@ createRoot(document.getElementById('root')!).render(
   </StrictMode>,
 );
 
+if (import.meta.env.VITE_REV2D_STATIC === 'true') {
+  const { installOfflineBackend } = await import('./offline.js');
+  await installOfflineBackend();
+}
+
 void session.start();
 
 // Close the event stream promptly when the page goes away (kept alive for back/forward cache restores).
