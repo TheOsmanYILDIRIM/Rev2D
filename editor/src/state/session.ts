@@ -1767,7 +1767,7 @@ export class Session {
   downloadCopy(): void {
     const s = this.get();
     if (s.status !== 'ready') return;
-    if (s.unsaved && s.doc) {
+    if ((s.unsaved || import.meta.env.VITE_REV2D_STATIC === 'true') && s.doc) {
       const url = URL.createObjectURL(new Blob([formatModelJson(s.doc)], { type: 'application/json' }));
       triggerDownload(url, baseName(s.file));
       setTimeout(() => URL.revokeObjectURL(url), 10_000);
