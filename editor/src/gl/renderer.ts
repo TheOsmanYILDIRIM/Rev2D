@@ -97,7 +97,7 @@ export class GlRenderer {
       premultipliedAlpha: true,
       depth: false,
       stencil: false,
-      preserveDrawingBuffer: false,
+      preserveDrawingBuffer: import.meta.env.VITE_REV2D_STATIC === 'true',
     });
     if (!gl) throw new Error('WebGL2 is not available in this browser (the viewport needs it).');
     const programs = createPrograms(gl);
