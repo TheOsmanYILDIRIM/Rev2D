@@ -95,6 +95,7 @@ export const files: Record<keyof typeof source, string> = {
 
   // ---- 새로 만들기
   'files.new.title': '새 모델',
+  'files.new.mobileSubtitle': '템플릿 또는 빈 캔버스에서 새 리그를 만듭니다.',
   'files.new.creates': '생성할 파일',
   'files.new.create': '만들기',
   'files.new.creating': '만드는 중…',

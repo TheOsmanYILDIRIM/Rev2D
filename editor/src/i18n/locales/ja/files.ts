@@ -95,6 +95,7 @@ export const files: Record<keyof typeof source, string> = {
 
   // ---- 新規
   'files.new.title': '新規モデル',
+  'files.new.mobileSubtitle': 'テンプレートまたは空のキャンバスから新しいリグを作成します。',
   'files.new.creates': '作成するファイル',
   'files.new.create': '作成',
   'files.new.creating': '作成中…',

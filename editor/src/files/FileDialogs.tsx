@@ -239,7 +239,9 @@ function NewDialog({ open, initialTemplate }: { open: boolean; initialTemplate?:
     <>
       <Dialog
         open={open}
-        title={t('files.new.title')}
+        title={<><button type="button" className="ed-new-back" aria-label={t('common.cancel')} onClick={() => session.closeDialog()}><Icon name="chevronLeft" size={20} /></button>{t('files.new.title')}</>}
+        description={t('files.new.mobileSubtitle')}
+        className="ed-new-dialog"
         icon="fileNew"
         size="lg"
         onCancel={() => session.closeDialog()}

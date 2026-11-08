@@ -98,6 +98,7 @@ export const files = {
 
   // ---- New
   'files.new.title': 'New Model',
+  'files.new.mobileSubtitle': 'Create a new rig from a template or an empty canvas.',
   'files.new.creates': 'Creates',
   'files.new.create': 'Create',
   'files.new.creating': 'Creating…',
