@@ -27,6 +27,7 @@ export function MobileWizard() {
   const animation=useApp(s=>s.animation);
   const [step,setStep]=useState(0),[selected,setSelected]=useState('');
   const [pngs,setPngs]=useState<File[]>([]);
+  const [previewUrls,setPreviewUrls]=useState<Record<string,string>>({});
   const [busy,setBusy]=useState(false),[error,setError]=useState('');
   const [duration,setDuration]=useState(2),[angle,setAngle]=useState(20),[motionName,setMotionName]=useState('idle');
   const [draft,setDraft]=useState<{id:string;x:number;y:number}|null>(null);
@@ -40,6 +41,22 @@ export function MobileWizard() {
   const boneTarget=bones.find(b=>b.id===selected)||bones.find(b=>b.id===chosen?.parent)||bones[0];
   const bound=pieces.filter(p=>typeof p.parent==='string'&&bones.some(b=>b.id===p.parent)).length;
   const complete=[textures.length>0,pieces.length>0,bound>0,animations.length>0,true];
+  const textureKey=JSON.stringify(textures.map(t=>[t.id,t.path]));
+  useEffect(()=>{
+    let live=true;
+    const urls:string[]=[];
+    setPreviewUrls({});
+    void Promise.all(textures.map(async tex=>{
+      const res=await fetch(textureUrl(tex.id,session.textureVersion));
+      if(!res.ok)throw new Error('Texture unavailable: '+tex.id);
+      const url=URL.createObjectURL(await res.blob());
+      urls.push(url);
+      return [tex.id,url] as const;
+    })).then(pairs=>{
+      if(live)setPreviewUrls(Object.fromEntries(pairs));
+    }).catch(()=>{if(live)setPreviewUrls({});});
+    return()=>{live=false;for(const u of urls)URL.revokeObjectURL(u);};
+  },[file,textureKey,session.textureVersion]);
   useEffect(()=>{
     const saved=Number(sessionStorage.getItem('rev2d-guide:'+file));
     const initial=textures.length?1:0;
@@ -170,7 +187,7 @@ export function MobileWizard() {
       {step===1&&<div className="ed-guide-stack">
         {pieces.length?<><div ref={preview} className="ed-guide-preview" style={{aspectRatio:w+'/'+h}} data-testid="wizard-preview">
           {pieces.map(p=>{const d=draft?.id===p.id?draft:null;const sh=p.shape;
-            return <img key={p.id} alt={p.id} src={textureUrl(sh.texture,session.textureVersion)}
+            return <img key={p.id} alt={p.id} src={previewUrls[sh.texture]||undefined} data-testid={"wizard-image-"+p.id}
               className={chosen?.id===p.id?'ed-guide-part-selected':''}
               style={{left:((d?.x??sh.x)/w*100)+'%',top:((d?.y??sh.y)/h*100)+'%',width:(sh.w/w*100)+'%',height:(sh.h/h*100)+'%',zIndex:Number(p.z)||0}}
               onPointerDown={e=>onDragStart(e,p)} onPointerMove={onDragMove} onPointerUp={()=>void onDragEnd()} onPointerCancel={()=>{dragging.current=null;setDraft(null);}}/>;

@@ -84,6 +84,10 @@ try{
   const miniCanvas=await page.getByTestId('wizard-preview').boundingBox();
   if(!miniCanvas || miniCanvas.width<100 || miniCanvas.height<100)
     throw Error('Wizard arrangement canvas has no visible size: '+JSON.stringify(miniCanvas));
+  await page.waitForFunction(()=>{
+    const image=document.querySelector('[data-testid^="wizard-image-"]');
+    return image instanceof HTMLImageElement && image.complete && image.naturalWidth>0;
+  },{timeout:15000});
   await shot('11-guide-arrange');
   await page.getByTestId('wizard-next').click();
   await page.getByTestId('wizard-add-bone').click();
