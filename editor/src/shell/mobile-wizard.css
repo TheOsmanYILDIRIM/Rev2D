@@ -22,7 +22,7 @@
 .ed-guide label:not(.ed-guide-upload){display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--r2-label-2)}
 .ed-guide input[type=number],.ed-guide input:not([type]),.ed-guide select{width:100%;min-width:0;min-height:35px;border:1px solid var(--r2-separator);background:var(--r2-fill-2);color:var(--r2-label);border-radius:9px;padding:5px 8px;font-size:14px}
 .ed-guide-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
-.ed-guide-preview{position:relative;max-width:100%;max-height:260px;margin:auto;background:var(--r2-canvas);border:1px solid var(--r2-separator);border-radius:10px;overflow:hidden;touch-action:none}
+.ed-guide-preview{position:relative;flex:none;align-self:center;width:min(100%,250px);max-width:100%;max-height:260px;margin:4px auto;background:var(--r2-canvas);border:1px solid var(--r2-separator);border-radius:10px;overflow:hidden;touch-action:none}
 .ed-guide-preview img{position:absolute;max-width:none;object-fit:fill;touch-action:none;user-select:none;border:1px solid transparent;cursor:grab}
 .ed-guide-preview img.ed-guide-part-selected{border:2px solid var(--r2-tint);z-index:200!important}
 .ed-guide-parts{display:flex;flex-wrap:wrap;gap:6px}

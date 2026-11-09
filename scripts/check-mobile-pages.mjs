@@ -81,6 +81,9 @@ try{
   await page.getByTestId('wizard-import').click();
   await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.parts?.some(p=>p.shape?.type==='image'),{timeout:30000});
   await page.getByTestId('wizard-preview').waitFor();
+  const miniCanvas=await page.getByTestId('wizard-preview').boundingBox();
+  if(!miniCanvas || miniCanvas.width<100 || miniCanvas.height<100)
+    throw Error('Wizard arrangement canvas has no visible size: '+JSON.stringify(miniCanvas));
   await shot('11-guide-arrange');
   await page.getByTestId('wizard-next').click();
   await page.getByTestId('wizard-add-bone').click();
