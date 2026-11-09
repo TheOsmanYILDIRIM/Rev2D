@@ -90,6 +90,15 @@ try{
   await page.getByTestId('wizard-make-animation').click();
   await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.animations?.length>0,{timeout:15000});
   await page.getByTestId('wizard-another-animation').waitFor();
+  // The second animation is a separate persistent model entry.
+  await page.locator('[data-testid="mobile-wizard"] input:not([type="number"])').last().fill('walk');
+  await page.getByTestId('wizard-another-animation').click();
+  await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.animations?.length===2,{timeout:15000});
+  await page.getByTestId('wizard-step-1').click();
+  const scroll=await page.locator('.ed-guide-body').evaluate(el=>el.scrollTop);
+  if(scroll!==0)throw Error('Wizard scroll not reset: '+scroll);
+  await page.getByTestId('wizard-step-4').click();
+
   await shot('13-guide-animations');
   if(errors.length)throw Error('Uncaught browser JS errors: '+errors.join(' | '));
   await shot('04-restored-project-mobile');

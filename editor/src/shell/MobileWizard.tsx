@@ -31,6 +31,7 @@ export function MobileWizard() {
   const [duration,setDuration]=useState(2),[angle,setAngle]=useState(20),[motionName,setMotionName]=useState('idle');
   const [draft,setDraft]=useState<{id:string;x:number;y:number}|null>(null);
   const preview=useRef<HTMLDivElement>(null);
+  const contentRef=useRef<HTMLDivElement>(null);
   const dragging=useRef<{id:string;x:number;y:number;left:number;top:number}|null>(null);
   const pieces=arr(doc?.parts).filter(p=>p.shape?.type==='image');
   const textures=arr(doc?.textures),bones=arr(doc?.bones),animations=arr(doc?.animations);
@@ -39,8 +40,18 @@ export function MobileWizard() {
   const boneTarget=bones.find(b=>b.id===selected)||bones.find(b=>b.id===chosen?.parent)||bones[0];
   const bound=pieces.filter(p=>typeof p.parent==='string'&&bones.some(b=>b.id===p.parent)).length;
   const complete=[textures.length>0,pieces.length>0,bound>0,animations.length>0,true];
-  useEffect(()=>{setStep(textures.length?1:0);setSelected('');setPngs([]);setError('');},[file]);
-  const go=(n:number)=>{setError('');setStep(clamp(n,0,4));};
+  useEffect(()=>{
+    const saved=Number(sessionStorage.getItem('rev2d-guide:'+file));
+    const initial=textures.length?1:0;
+    setStep(Number.isInteger(saved)&&saved>=initial&&saved<=4?saved:initial);
+    setSelected('');setPngs([]);setError('');
+  },[file]);
+  useEffect(()=>{if(contentRef.current)contentRef.current.scrollTop=0;},[step]);
+  const go=(n:number)=>{
+    const next=clamp(n,0,4);
+    setError('');setStep(next);
+    if(file)sessionStorage.setItem('rev2d-guide:'+file,String(next));
+  };
   const notify=(message:string)=>{setError(message);if(message)session.toast('error',message);};
   const selectFiles=(e:ChangeEvent<HTMLInputElement>)=>{
     const files=Array.from(e.currentTarget.files??[]);
@@ -144,10 +155,10 @@ export function MobileWizard() {
   return <div className="ed-guide" data-testid="mobile-wizard">
     <div className="ed-guide-progress">
       {steps.map((item,i)=><button key={i} className="ed-guide-progress-item" aria-current={step===i?'step':undefined}
-        onClick={()=>go(i)} data-testid={'wizard-step-'+i}><span>{i+1}</span><small>{item.title}</small></button>)}
+        disabled={i>step&&!complete.slice(0,i).every(Boolean)} onClick={()=>go(i)} data-testid={'wizard-step-'+i}><span>{i+1}</span><small>{item.title}</small></button>)}
     </div>
     <div className="ed-guide-heading"><strong>{step+1}. {steps[step].title}</strong><span>{steps[step].tip}</span></div>
-    <div className="ed-guide-body">
+    <div className="ed-guide-body" ref={contentRef}>
       {step===0&&<div className="ed-guide-stack">
         <label className="ed-guide-upload">PNG dosyalarını seç
           <input type="file" accept=".png,image/png" multiple onChange={selectFiles} data-testid="wizard-png"/>
