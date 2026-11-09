@@ -1156,6 +1156,21 @@ export class Session {
     return { ok: true, ref: next, diagnostics: check.diagnostics };
   }
 
+  /** An undoable, validated whole-model edit for the small-screen guided builder.
+   * Uses the same write path and conflict checks as the Inspector. */
+  async applyGuidedDoc(doc: RawDoc, label: string): Promise<{ ok: boolean; error?: string }> {
+    if (this.writing) await this.writing.catch(() => false);
+    const current = this.get();
+    if (current.status !== 'ready' || !current.doc) return { ok: false, error: 'No editable model is open.' };
+    const checked = validateModel(doc);
+    if (errorCount(checked.diagnostics) > 0) {
+      return { ok: false, error: checked.diagnostics.filter((d) => d.severity === 'error').slice(0, 2).map((d) => d.message).join('; ') || 'Invalid model' };
+    }
+    this.history.push(doc, label);
+    const written = await this.writeDoc(doc, false, current.mtimeMs);
+    return { ok: written, ...(written ? {} : { error: 'The model could not be saved.' }) };
+  }
+
   /**
    * Ctrl+S: write the current raw document (formatted) when it is not on disk yet (a rejected or
    * failed write). Otherwise the file already holds it and rewriting would only reformat it.

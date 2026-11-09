@@ -2,7 +2,7 @@
  * Browser-level smoke test of the exact static Pages bundle.
  * Exercises the real Session, WebGL2 viewport and IndexedDB persistence on a mobile viewport.
  */
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { spawn } from 'node:child_process';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from 'playwright-core';
@@ -46,6 +46,8 @@ try{
     throw Error('Phone toolbar clipped the Save action: '+JSON.stringify(saveBox));
   await shot('03-rig-workspace-mobile');
   await page.getByTestId('mobile-workspace').waitFor();
+  await page.getByTestId('mobile-wizard').waitFor();
+  await page.getByTestId('mobile-enter-advanced').click();
   await page.getByTestId('mobile-tab-inspect').click();
   await page.getByTestId('inspector-panel').waitFor();
   await shot('05-inspect-mobile');
@@ -70,6 +72,25 @@ try{
   await page.waitForFunction(()=>window.__rev2d?.stats()?.ready,{timeout:30000});
   const restored=await page.evaluate(()=>window.__rev2d.stats());
   if(!restored.file.includes('smoke.r2d.json')||restored.errors)throw Error('Model restore failed: '+JSON.stringify(restored));
+  // End-to-end wizard: import PNG, arrange, create bone and animation.
+  await page.getByTestId('mobile-wizard').waitFor();
+  await shot('10-guide-upload');
+  await page.getByTestId('wizard-png').setInputFiles({
+    name:'part.png',mimeType:'image/png',buffer:readFileSync('editor/src/assets/templates/minimal.png')
+  });
+  await page.getByTestId('wizard-import').click();
+  await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.parts?.some(p=>p.shape?.type==='image'),{timeout:30000});
+  await page.getByTestId('wizard-preview').waitFor();
+  await shot('11-guide-arrange');
+  await page.getByTestId('wizard-next').click();
+  await page.getByTestId('wizard-add-bone').click();
+  await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.bones?.length>0,{timeout:15000});
+  await shot('12-guide-rig');
+  await page.getByTestId('wizard-next').click();
+  await page.getByTestId('wizard-make-animation').click();
+  await page.waitForFunction(()=>window.__rev2d?.session.get().doc?.animations?.length>0,{timeout:15000});
+  await page.getByTestId('wizard-another-animation').waitFor();
+  await shot('13-guide-animations');
   if(errors.length)throw Error('Uncaught browser JS errors: '+errors.join(' | '));
   await shot('04-restored-project-mobile');
   console.log(JSON.stringify({ok:true,initial,restored,mobileViewport:[390,844],webgl:true,indexeddb:true,screenshots:shots},null,2));

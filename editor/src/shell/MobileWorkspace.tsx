@@ -3,6 +3,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ComponentType, type 
 import { Icon } from '../design/index.js';
 import { useApp, useSession } from '../state/context.js';
 import { Timeline } from '../panels/Timeline.js';
+import { MobileWizard } from './MobileWizard.js';
 import './mobile-workspace.css';
 type Page = 'panels' | 'inspect' | 'timeline';
 type Extent = 'peek' | 'half' | 'full';
@@ -16,6 +17,7 @@ interface Props {
 export function MobileWorkspace({ leading: Leading, trailing: Trailing, bottom: Bottom, modeId, onHeightChange }: Props) {
   const session=useSession();
   const [page,setPage]=useState<Page>('panels');
+  const [guided,setGuided]=useState(modeId==='rig');
   const [extent,setExtent]=useState<Extent>('half');
   const compact=useApp(s=>s.compactPanels);
   const selected=useApp(s=>s.selection[0]??'');
@@ -59,7 +61,7 @@ export function MobileWorkspace({ leading: Leading, trailing: Trailing, bottom: 
     if(Math.abs(dy)>35)didDrag.current=true;
     if(dy < -35)resize(1);else if(dy > 35)resize(-1);
   };
-  return <div ref={host} className="ed-mobile-workspace" data-testid="mobile-workspace" data-page={active} data-extent={extent}>
+  return <div ref={host} className="ed-mobile-workspace" data-testid="mobile-workspace" data-page={active} data-extent={extent} data-guided={guided ? "" : undefined}>
     <section className="ed-mobile-sheet" aria-label={active+' workspace'}>
       <header className="ed-mobile-sheet-head">
         <button type="button" className="ed-mobile-drag" aria-label="Expand or collapse panel"
@@ -67,7 +69,7 @@ export function MobileWorkspace({ leading: Leading, trailing: Trailing, bottom: 
           onClick={()=>{if(didDrag.current){didDrag.current=false;return;}resize(extent==='peek'?1:-1);}}>
           <span className="ed-mobile-drag-line"/>
         </button>
-        <div className="ed-mobile-heading"><strong>{choices.find(x=>x.id===active)?.label}</strong>
+        <div className="ed-mobile-heading"><strong>{guided ? 'Karakter oluşturma' : choices.find(x=>x.id===active)?.label}</strong>
           {active==='inspect'&&selected&&<span className="ed-mobile-selection" title={selected}>Selected: {selected.split(':').slice(1).join(':')}</span>}
         </div>
         <div className="ed-mobile-resize">
@@ -76,15 +78,21 @@ export function MobileWorkspace({ leading: Leading, trailing: Trailing, bottom: 
         </div>
       </header>
       <div className="ed-mobile-sheet-content" data-testid="mobile-panel-content">
+        {guided && modeId==="rig" && <MobileWizard />}
+        {!guided && <>
+
         {active==='panels'&&extent!=='peek'&&Leading&&<Leading/>}
         {active==='inspect'&&extent!=='peek'&&Trailing&&<Trailing/>}
         {active==='timeline'&&Bottom&&(modeId==='rig'
           ? <Timeline collapsed={extent==='peek'} onToggleMobile={()=>setExtent(v=>v==='peek'?'half':'peek')}/>
           : <Bottom collapsed={extent==='peek'}/>)}
+        </>}
       </div>
     </section>
     <nav className="ed-mobile-nav" aria-label="Editor workspace" data-testid="mobile-workspace-tabs">
-      {choices.map(({id,label,icon})=><button key={id} type="button" className="ed-mobile-nav-item"
+      {guided && <button type="button" className="ed-mobile-guide-action" data-testid="mobile-enter-advanced" onClick={()=>setGuided(false)}>Gelişmiş araçlar</button>}
+      {!guided && modeId==='rig' && <button type="button" className="ed-mobile-guide-action" data-testid="mobile-enter-guide" onClick={()=>{setGuided(true);setExtent('half');}}>Adım adım</button>}
+      {!guided && choices.map(({id,label,icon})=><button key={id} type="button" className="ed-mobile-nav-item"
         aria-current={active===id?'page':undefined} onClick={()=>show(id)} data-testid={'mobile-tab-'+id}>
         <Icon name={icon} size={20}/><span>{label}</span>
       </button>)}
